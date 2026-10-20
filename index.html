@@ -439,7 +439,7 @@
             <div id="finaGlobalResults" role="listbox" aria-label="Resultados da busca"></div>
         </div>
 
-        <div id="dashboard" class="section active"><div class="fina-tool-card" id="finaCatalogoPublicacao" style="border:2px solid var(--brand-accent);margin:18px 0"><h3>Catálogo público para clientes</h3><p style="color:var(--text-muted);font-size:.85rem">Publica somente nome, categoria, referência, preço, fotos reduzidas, cores e tamanhos. Não envia custos, vendas, clientes ou financeiro. Sincronização ativada por padrão neste painel; você pode desativá-la aqui.</p><p style="font-size:.8rem;margin:9px 0"><strong>Atenção:</strong> As permissões do Firebase devem permanecer restritas à conta administradora.</p><button type="button" onclick="finaPublicarCatalogo()" style="background:var(--brand-main);color:white;border:0;border-radius:12px;padding:12px 16px;font-weight:800;cursor:pointer">Publicar catálogo agora</button><label style="display:block;margin-top:12px;font-size:.85rem"><input type="checkbox" id="finaAutoPublicarCatalogo" style="width:auto" onchange="finaSetAutoCatalogo(this.checked)"> Atualizar catálogo automaticamente após salvar no painel</label><p id="finaCatalogoStatus" style="font-size:.82rem;color:var(--text-muted);margin-top:8px">Nenhuma publicação realizada nesta sessão.</p></div>
+        <div id="dashboard" class="section active"><div class="fina-tool-card" id="finaCatalogoPublicacao" style="border:2px solid var(--brand-accent);margin:18px 0"><h3>Catálogo público para clientes</h3><p style="color:var(--text-muted);font-size:.85rem">Publica somente nome, categoria, referência, preço, fotos na melhor qualidade disponível, cores e tamanhos. Não envia custos, vendas, clientes ou financeiro. Sincronização ativada por padrão neste painel; você pode desativá-la aqui.</p><p style="font-size:.8rem;margin:9px 0"><strong>Atenção:</strong> As permissões do Firebase devem permanecer restritas à conta administradora.</p><button type="button" onclick="finaPublicarCatalogo()" style="background:var(--brand-main);color:white;border:0;border-radius:12px;padding:12px 16px;font-weight:800;cursor:pointer">Publicar catálogo agora</button><label style="display:block;margin-top:12px;font-size:.85rem"><input type="checkbox" id="finaAutoPublicarCatalogo" style="width:auto" onchange="finaSetAutoCatalogo(this.checked)"> Atualizar catálogo automaticamente após salvar no painel</label><p id="finaCatalogoStatus" style="font-size:.82rem;color:var(--text-muted);margin-top:8px">Nenhuma publicação realizada nesta sessão.</p></div>
             <div style="background: linear-gradient(135deg, var(--rose-champagne) 0%, var(--card-pure) 100%); border-radius: 20px; padding: 16px 20px; margin-bottom: 22px; border: 1px solid var(--brand-accent); text-align: center; box-shadow: var(--shadow-luxury);">
                 <span style="font-size: 0.75rem; font-weight: 800; color: var(--brand-accent); text-transform: uppercase; letter-spacing: 1.5px; display: block; margin-bottom: 4px;">🌸 Dica & Inspiração do Dia</span>
                 <p id="fraseDiariaTexto" style="font-size: 0.95rem; font-weight: 600; color: var(--brand-main); font-style: italic; line-height: 1.4;"></p>
@@ -2534,11 +2534,47 @@ function finaStatusCatalogo(t) { let el=document.getElementById('finaCatalogoSta
 window.addEventListener('load',()=>{let e=document.getElementById('finaAutoPublicarCatalogo');if(e)e.checked=localStorage.getItem('fina_catalogo_auto')!=='nao';});
 const finaCatalogoTamanhos=['P','M','G','GG','Outro'];
 function finaGradePublica(g) {let o={};finaCatalogoTamanhos.forEach(t=>o[t]=Math.max(0,Math.floor(Number((g||{})[t])||0)));return o;}
+// Mantém a qualidade que já existe no painel; não reconverte toda imagem.
 async function finaImagemPequena(src) {
-  if(!src || typeof src!=='string')return '';
-  if(src.length<45000)return src;
-  if(!src.startsWith('data:image/'))return src;
-  return new Promise(resolve=>{let img=new Image();img.onload=()=>{try{let scale=Math.min(1,560/Math.max(img.width,img.height));let c=document.createElement('canvas');c.width=Math.max(1,Math.round(img.width*scale));c.height=Math.max(1,Math.round(img.height*scale));c.getContext('2d').drawImage(img,0,0,c.width,c.height);resolve(c.toDataURL('image/jpeg',.68));}catch(e){resolve('')}};img.onerror=()=>resolve('');img.src=src;});
+  return typeof src === 'string' ? src : '';
+}
+// Apenas itens acima do limite seguro do Firestore são ajustados.
+async function finaAjustarFotoSeNecessario(src, maxDim, quality) {
+  if (!src || typeof src !== 'string' || !src.startsWith('data:image/')) return src || '';
+  return new Promise(resolve => {
+    const image = new Image();
+    image.onload = () => {
+      try {
+        const ratio = Math.min(1, maxDim / Math.max(image.naturalWidth, image.naturalHeight));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(image.naturalWidth * ratio));
+        canvas.height = Math.max(1, Math.round(image.naturalHeight * ratio));
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      } catch (error) { console.warn('Foto original preservada:', error); resolve(src); }
+    };
+    image.onerror = () => resolve(src);
+    image.src = src;
+  });
+}
+async function finaAjustarDocumentoPublico(doc, nome) {
+  // Não duplica a foto da primeira cor no mesmo documento.
+  if (doc.cores.length && doc.cores[0].foto) doc.foto = '';
+  const limiteSeguro = 900000;
+  if (JSON.stringify(doc).length <= limiteSeguro) return doc;
+  const fotosOriginais = doc.cores.map(c => c.foto || '');
+  const fotoPrincipal = doc.foto || '';
+  for (const [dim, qualidade] of [[740,.82],[650,.8],[560,.75],[460,.7]]) {
+    doc.cores = await Promise.all(doc.cores.map(async (c,i)=>({
+      ...c, foto: await finaAjustarFotoSeNecessario(fotosOriginais[i],dim,qualidade)
+    })));
+    doc.foto = await finaAjustarFotoSeNecessario(fotoPrincipal,dim,qualidade);
+    if (JSON.stringify(doc).length <= limiteSeguro) return doc;
+  }
+  throw new Error('As fotos do produto "'+nome+'" excederam o limite do Firebase. Nenhuma foto foi apagada.');
 }
 async function finaFotoPublica(p,corIndex) {
   let cor=corIndex>=0?(p.galeriaCores||[])[corIndex]:null;
@@ -2562,9 +2598,9 @@ async function finaPublicarCatalogo(silencioso=false) {
         let c=lista[i];
         cores.push({nome:String(c.nome||'Cor '+(i+1)).slice(0,80),grade:finaGradePublica(c.grade),esgotada:!!c.esgotada,foto:await finaFotoPublica(p,i)});
       }
-      let doc={nome:String(p.nome||'Peça').slice(0,180),categoria:String(p.categoria||'Lingerie').slice(0,80),ref:String(p.ref||'').slice(0,90),preco:Math.max(0,Number(p.preco)||0),grade:finaGradePublica(p.grade),cores,foto:cores[0]?.foto||(await finaFotoPublica(p,-1)),ativo:true,atualizadoEm:firebase.firestore.FieldValue.serverTimestamp()};
-      // Não publique imagem caso exceda o limite de documento do Firestore.
-      if(JSON.stringify(doc).length>850000){ doc.cores=doc.cores.map(c=>({...c,foto:''})); if(JSON.stringify(doc).length>850000)doc.foto=''; }
+      let doc={nome:String(p.nome||'Peça').slice(0,180),categoria:String(p.categoria||'Lingerie').slice(0,80),ref:String(p.ref||'').slice(0,90),preco:Math.max(0,Number(p.preco)||0),grade:finaGradePublica(p.grade),cores,foto:cores.length?'':(await finaFotoPublica(p,-1)),ativo:true,atualizadoEm:firebase.firestore.FieldValue.serverTimestamp()};
+      // Usa a foto original quando cabe; comprime apenas documentos grandes.
+      await finaAjustarDocumentoPublico(doc,p.nome||id);
       await db.collection('fina_catalogo_publico').doc(id).set(doc);
       refs.push(id);n++;finaStatusCatalogo('Publicando '+n+' de '+produtos.length+' produtos...');
     }

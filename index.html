@@ -442,7 +442,7 @@
             <div id="finaGlobalResults" role="listbox" aria-label="Resultados da busca"></div>
         </div>
 
-        <div id="dashboard" class="section active"><div class="fina-tool-card" id="finaCatalogoPublicacao" style="border:2px solid var(--brand-accent);margin:18px 0"><h3>Catálogo público para clientes</h3><p style="color:var(--text-muted);font-size:.85rem">Publica somente nome, categoria, referência, preço, fotos na melhor qualidade disponível, cores e tamanhos. Não envia custos, vendas, clientes ou financeiro. Sincronização ativada por padrão neste painel; você pode desativá-la aqui.</p><p style="font-size:.8rem;margin:9px 0"><strong>Atenção:</strong> As permissões do Firebase devem permanecer restritas à conta administradora.</p><button type="button" onclick="finaPublicarCatalogo()" style="background:var(--brand-main);color:white;border:0;border-radius:12px;padding:12px 16px;font-weight:800;cursor:pointer">Publicar catálogo agora</button><label style="display:block;margin-top:12px;font-size:.85rem"><input type="checkbox" id="finaAutoPublicarCatalogo" style="width:auto" onchange="finaSetAutoCatalogo(this.checked)"> Atualizar catálogo automaticamente após salvar no painel</label><p id="finaCatalogoStatus" style="font-size:.82rem;color:var(--text-muted);margin-top:8px">Nenhuma publicação realizada nesta sessão.</p></div>
+        <div id="dashboard" class="section active"><div class="fina-tool-card" id="finaCatalogoPublicacao" style="border:2px solid var(--brand-accent);margin:18px 0"><h3>Catálogo público para clientes</h3><p style="color:var(--text-muted);font-size:.85rem">Publica somente nome, categoria, referência, preço, fotos automaticamente na melhor qualidade disponível, cores e tamanhos. Não envia custos, vendas, clientes ou financeiro. Sincronização ativada por padrão neste painel; você pode desativá-la aqui.</p><p style="font-size:.8rem;margin:9px 0"><strong>Atenção:</strong> As permissões do Firebase devem permanecer restritas à conta administradora.</p><button type="button" onclick="finaPublicarCatalogo()" style="background:var(--brand-main);color:white;border:0;border-radius:12px;padding:12px 16px;font-weight:800;cursor:pointer">Publicar catálogo agora</button><button type="button" onclick="finaTestarFotoProduto().catch(e=>{finaStatusCatalogo('Erro no teste: '+e.message);alert('Não foi possível testar: '+e.message)})" style="background:#fff;color:var(--brand-main);border:1px solid var(--brand-accent);border-radius:12px;padding:12px 16px;font-weight:800;cursor:pointer;margin-left:8px">Diagnosticar 1 foto</button><label style="display:block;margin-top:12px;font-size:.85rem"><input type="checkbox" id="finaAutoPublicarCatalogo" style="width:auto" onchange="finaSetAutoCatalogo(this.checked)"> Atualizar catálogo automaticamente após salvar no painel</label><p id="finaCatalogoStatus" style="font-size:.82rem;color:var(--text-muted);margin-top:8px">Nenhuma publicação realizada nesta sessão.</p></div>
             <div style="background: linear-gradient(135deg, var(--rose-champagne) 0%, var(--card-pure) 100%); border-radius: 20px; padding: 16px 20px; margin-bottom: 22px; border: 1px solid var(--brand-accent); text-align: center; box-shadow: var(--shadow-luxury);">
                 <span style="font-size: 0.75rem; font-weight: 800; color: var(--brand-accent); text-transform: uppercase; letter-spacing: 1.5px; display: block; margin-bottom: 4px;">🌸 Dica & Inspiração do Dia</span>
                 <p id="fraseDiariaTexto" style="font-size: 0.95rem; font-weight: 600; color: var(--brand-main); font-style: italic; line-height: 1.4;"></p>
@@ -2586,11 +2586,18 @@ async function finaAjustarFotoSeNecessario(src, maxDim, quality) {
 async function finaAjustarDocumentoPublico(doc, nome) {
   // Não duplica a foto da primeira cor no mesmo documento.
   if (doc.cores.length && doc.cores[0].foto) doc.foto = '';
-  const limiteSeguro = 900000;
+  // Mantemos uma margem segura abaixo do limite do Firestore, mas agora
+  // tentamos preservar mais qualidade antes de começar a comprimir.
+  const limiteSeguro = 975000;
   if (JSON.stringify(doc).length <= limiteSeguro) return doc;
   const fotosOriginais = doc.cores.map(c => c.foto || '');
   const fotoPrincipal = doc.foto || '';
-  for (const [dim, qualidade] of [[740,.82],[650,.8],[560,.75],[460,.7]]) {
+  const etapas = [
+    [1200,.92],[1100,.90],[1000,.88],[920,.86],
+    [860,.84],[800,.82],[740,.80],[680,.78],
+    [620,.76],[560,.74],[500,.72],[460,.70]
+  ];
+  for (const [dim, qualidade] of etapas) {
     doc.cores = await Promise.all(doc.cores.map(async (c,i)=>({
       ...c, foto: await finaAjustarFotoSeNecessario(fotosOriginais[i],dim,qualidade)
     })));
@@ -2599,11 +2606,77 @@ async function finaAjustarDocumentoPublico(doc, nome) {
   }
   throw new Error('As fotos do produto "'+nome+'" excederam o limite do Firebase. Nenhuma foto foi apagada.');
 }
+// Busca PRIMEIRO a foto completa em fina_fotos. O documento principal de
+// produtos costuma guardar apenas a miniatura comprimida para a vitrine.
+// O cache evita repetir leituras durante uma publicação de vários produtos.
+const finaCacheFotosPublicas = new Map();
 async function finaFotoPublica(p,corIndex) {
-  let cor=corIndex>=0?(p.galeriaCores||[])[corIndex]:null;
-  let img=cor?(cor.foto||cor.miniatura||''):(p.foto||'');
-  if(!img && p.id!=null){let key=getDocIdFistore()+'_'+p.id+(corIndex>=0?'_cor_'+corIndex:'');try{let snap=await db.collection('fina_fotos').doc(key).get();if(snap.exists)img=snap.data().foto||snap.data().miniatura||'';}catch(e){console.warn('Foto indisponível:',key,e);}}
-  return finaImagemPequena(img);
+  const cor=corIndex>=0?(p.galeriaCores||[])[corIndex]:null;
+  const fallback=cor?(cor.foto||cor.miniatura||''):(p.foto||'');
+  if (p.id==null) return fallback;
+  const key=getDocIdFistore()+'_'+p.id+(corIndex>=0?'_cor_'+corIndex:'');
+  try {
+    if (!finaCacheFotosPublicas.has(key)) {
+      finaCacheFotosPublicas.set(key, db.collection('fina_fotos').doc(key).get()
+        .then(snap=>{
+          if(!snap.exists) return '';
+          const data = snap.data() || {};
+          return data.foto || data.miniatura || '';
+        })
+        .catch(err=>{ console.warn('Foto completa não encontrada:',key,err); return ''; }));
+    }
+    const completa=await finaCacheFotosPublicas.get(key);
+    // Quando as duas existirem, preferimos a maior, pois normalmente é a de
+    // melhor resolução. Se a foto externa existir, ela continua tendo prioridade.
+    if (completa && fallback) return completa.length >= fallback.length ? completa : fallback;
+    return completa || fallback;
+  } catch(e) {
+    console.warn('Usando foto local por falha de leitura:',key,e);
+    return fallback;
+  }
+}
+
+// Testa uma única peça, sem alterar o estoque, produtos privados nem excluir
+// outros itens da vitrine. Mostra origem, dimensões e impacto da compressão.
+function finaTamanhoImagem(url){
+  return new Promise(resolve=>{
+    if(!url){resolve('sem foto');return;}
+    const img=new Image();
+    img.onload=()=>resolve(img.naturalWidth+'×'+img.naturalHeight+' pixels');
+    img.onerror=()=>resolve('dimensões indisponíveis');
+    img.src=url;
+  });
+}
+async function finaTestarFotoProduto(){
+  if(!auth.currentUser){alert('Entre como administrador para testar.');return;}
+  const termo=prompt('Digite a referência da peça que está borrada no catálogo (ex.: 6022):');
+  if(!termo || !termo.trim())return;
+  const p=produtos.find(p=>String(p.ref||'').toLowerCase().trim()===termo.toLowerCase().trim())
+      ||produtos.find(p=>String(p.ref||'').toLowerCase().includes(termo.toLowerCase().trim()));
+  if(!p){alert('Não encontrei essa referência. Confira a referência no painel.');return;}
+  const id='fina_'+String(p.id).replace(/[^a-zA-Z0-9_-]/g,'_');
+  const lista=Array.isArray(p.galeriaCores)?p.galeriaCores:[];
+  const cores=[];
+  let info=[];
+  finaStatusCatalogo('Verificando fotos da peça '+(p.ref||p.nome)+'...');
+  for(let i=0;i<lista.length;i++){
+    const c=lista[i];
+    const foto=await finaFotoPublica(p,i);
+    const mini=c.miniatura||'';
+    info.push((c.nome||'Cor '+(i+1))+': miniatura '+await finaTamanhoImagem(mini)+' → foto recuperada '+await finaTamanhoImagem(foto));
+    cores.push({nome:String(c.nome||'Cor '+(i+1)).slice(0,80),grade:finaGradePublica(c.grade),esgotada:!!c.esgotada,foto});
+  }
+  let foto=cores.length?'':await finaFotoPublica(p,-1);
+  if(!cores.length)info.push('Foto única: '+await finaTamanhoImagem(foto));
+  const doc={nome:String(p.nome||'Peça').slice(0,180),categoria:String(p.categoria||'Lingerie').slice(0,80),tipoPeca:String(p.tipoPeca||'').slice(0,65),ref:String(p.ref||'').slice(0,90),preco:Math.max(0,Number(p.preco)||0),grade:finaGradePublica(p.grade),cores,foto,ativo:true,atualizadoEm:firebase.firestore.FieldValue.serverTimestamp()};
+  await finaAjustarDocumentoPublico(doc,p.nome||id);
+  const enviada=doc.cores[0]?.foto||doc.foto||'';
+  info.push('Imagem enviada no teste: '+await finaTamanhoImagem(enviada));
+  const ok=confirm('Diagnóstico para '+p.nome+'\n\n'+info.join('\n')+'\n\nPublicar SOMENTE esta peça no catálogo para comparar?');
+  if(!ok){finaStatusCatalogo('Teste cancelado. Nenhum dado foi alterado.');return;}
+  await db.collection('fina_catalogo_publico').doc(id).set(doc);
+  finaStatusCatalogo('Peça '+(p.ref||p.nome)+' publicada isoladamente. Confira sua imagem no catálogo das clientes.');
+  alert('Peça atualizada com sucesso. Abra o catálogo e confira somente essa foto.');
 }
 async function finaPublicarCatalogo(silencioso=false) {
   if(!auth.currentUser) {finaStatusCatalogo('Faça login para publicar.'); if(!silencioso) alert('Faça login antes de publicar.');return;}

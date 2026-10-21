@@ -457,6 +457,71 @@ html.dark-mode #estoque #listaProdutos .vitrine-sold-info{color:#d4adb5}
  #estoque #listaProdutos .vitrine-admin-card .btn-manage{grid-column:auto}
 }
 
+
+/* V14 painel Boutique: organização visual sem modificar persistência e estoque */
+#estoque .vitrine-admin-header{background:linear-gradient(125deg,#fff9fa 0%,#f9e8ed 100%);border:1px solid #ecd4dd!important;border-radius:23px!important;padding:24px!important;box-shadow:0 10px 26px rgba(96,35,57,.07);align-items:center}
+#estoque .vitrine-admin-heading h2{font-size:2.15rem!important;letter-spacing:-.02em}
+#estoque .vitrine-admin-heading p{max-width:610px}
+#estoque .vitrine-admin-toolbar{gap:11px}
+#estoque .vitrine-search input{background:#fff;border-radius:16px;height:50px}
+#estoque .vitrine-extra-filters{display:flex;align-items:end;flex-wrap:wrap;gap:9px;padding:11px 13px;margin:1px 0 13px;background:#fff8fa;border:1px solid #ead5de;border-radius:17px}
+#estoque .vitrine-extra-filters label{min-width:140px;flex:1 1 165px;display:flex;flex-direction:column;gap:5px;font-size:.7rem;font-weight:800;color:var(--brand-main);margin:0}
+#estoque .vitrine-extra-filters select{height:42px;min-width:0;width:100%;padding:7px 11px;background:#fff;color:#512d3a;border-radius:12px;border:1px solid #e6d3da;font-size:.82rem;font-weight:650;outline-offset:2px}
+#estoque .vitrine-reset-filters{min-height:42px;border:1px solid #ddbfc9;border-radius:12px;padding:9px 14px;background:#fff;color:var(--brand-main);font-weight:800;font-size:.78rem}
+#estoque .vitrine-admin-filters{gap:7px!important}
+#estoque .vitrine-admin-filters .filter-btn{font-size:.77rem!important;border-radius:12px!important;min-height:41px;padding:8px 14px!important}
+#estoque #listaProdutos{gap:18px!important}
+#estoque #listaProdutos .vitrine-admin-card{border-radius:19px!important;background:#fff!important;border:1px solid #e7d2dc!important;box-shadow:0 9px 28px rgba(77,25,45,.07)!important}
+#estoque .vitrine-card-photo{background:#fcf2f6!important}
+#estoque .vitrine-card-photo img{object-fit:contain!important;transition:transform .2s ease}
+#estoque .vitrine-photo-label{box-shadow:0 2px 9px rgba(78,28,48,.06)}
+#estoque .vitrine-product-ref{letter-spacing:.035em}
+#estoque .vitrine-admin-card .product-info h4{font-size:1.02rem!important;line-height:1.32!important;min-height:2.64em}
+#estoque .vitrine-price-block{background:#fff9fa!important;border-radius:14px!important;padding:10px 12px!important}
+#estoque .vitrine-price-block .price{font-size:1.3rem!important}
+#estoque .vitrine-stock-box{background:#fff!important;border-color:#efdae2!important;border-radius:13px!important}
+#estoque .vitrine-stock-heading{gap:6px;align-items:center}
+#estoque .vitrine-size-pill{border-radius:9px!important;font-weight:800;min-width:47px;text-align:center}
+#estoque .color-picker-container{background:#fffafd!important;border-bottom:1px solid #f1e0e7!important;padding:9px 11px!important;gap:8px!important}
+#estoque .color-picker-label{font-size:.74rem!important;white-space:normal!important}
+#estoque .color-picker-label strong{color:var(--brand-main);margin-left:3px}
+#estoque .color-circle-btn{width:34px!important;height:34px!important;border-radius:50%!important}
+#estoque .card-actions{gap:6px!important;padding-top:9px!important}
+#estoque .card-actions button{border-radius:11px!important;min-height:42px!important;font-size:.75rem!important;letter-spacing:0!important}
+#estoque .btn-del{background:#fff6f8!important;color:#9b425d!important;border:1px solid #e9cbd6!important}
+#estoque .btn-edit-prod{background:#f9e8ed!important;color:#6b2540!important}
+#estoque .btn-manage{background:#69263e!important;color:#fff!important}
+#estoque .vitrine-list-meta{font-size:.8rem!important}
+#estoque.vitrine-compacta #listaProdutos .vitrine-admin-card{border-radius:15px!important}
+#estoque.vitrine-compacta #listaProdutos{gap:10px!important}
+#estoque.vitrine-compacta .vitrine-card-photo img{max-height:165px!important}
+@media(max-width:700px){
+ #estoque .vitrine-admin-header{padding:17px 15px!important;border-radius:19px!important}
+ #estoque .vitrine-admin-heading h2{font-size:1.82rem!important}
+ #estoque .vitrine-admin-toolbar{flex-direction:column;align-items:stretch;gap:9px}
+ #estoque .vitrine-admin-toolbar .vitrine-search{width:100%}
+ #estoque .vitrine-view-buttons{width:100%;display:grid;grid-template-columns:1fr 1fr}
+ #estoque .vitrine-view-btn{min-height:42px}
+ #estoque .vitrine-extra-filters{gap:8px;padding:10px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+ #estoque .vitrine-extra-filters label{flex:none;min-width:0}
+ #estoque .vitrine-extra-filters label:nth-child(3){grid-column:1/-1}
+ #estoque .vitrine-reset-filters{grid-column:1/-1}
+ #estoque .vitrine-admin-filters{overflow:auto;flex-wrap:nowrap!important;padding:3px 1px 8px;scrollbar-width:none}
+ #estoque .vitrine-admin-filters .filter-btn{white-space:nowrap;flex:0 0 auto}
+ #estoque #listaProdutos{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important}
+ #estoque #listaProdutos .vitrine-admin-card{border-radius:14px!important}
+ #estoque .vitrine-admin-card .product-info{padding:9px!important}
+ #estoque .vitrine-admin-card .product-info h4{font-size:.83rem!important}
+ #estoque .vitrine-price-block .price{font-size:1.1rem!important}
+ #estoque .vitrine-card-photo img{max-height:145px!important}
+ #estoque .card-actions{display:grid!important;grid-template-columns:1fr 1fr;gap:6px!important}
+ #estoque .card-actions .btn-manage{grid-column:1/-1}
+ #estoque .card-actions button{min-height:42px!important;white-space:nowrap}
+ #estoque .vitrine-list-meta span:last-child{display:none}
+}
+@media(max-width:360px){#estoque #listaProdutos{grid-template-columns:1fr!important}}
+@media(prefers-reduced-motion:reduce){#estoque .vitrine-card-photo img,#estoque .card-actions button{transition:none!important}}
+
 </style>
 </head>
 <body>
@@ -915,6 +980,12 @@ html.dark-mode #estoque #listaProdutos .vitrine-sold-info{color:#d4adb5}
                 </div>
             </div>
 
+            <div class="vitrine-extra-filters" aria-label="Filtros detalhados da vitrine">
+                <label>Tipo de peça<select id="vitrineFiltroTipo" onchange="renderizarProdutos()"><option value="">Todos os tipos</option></select></label>
+                <label>Tamanho<select id="vitrineFiltroTamanho" onchange="renderizarProdutos()"><option value="">Todos os tamanhos</option><option>PP</option><option>P</option><option>M</option><option>G</option><option>GG</option><option>XG</option><option value="Outro">Único / Outro</option></select></label>
+                <label>Cor<select id="vitrineFiltroCor" onchange="renderizarProdutos()"><option value="">Todas as cores</option></select></label>
+                <button type="button" class="vitrine-reset-filters" onclick="limparFiltrosVitrine()">Limpar filtros</button>
+            </div>
             <div class="filter-container vitrine-admin-filters">
                 <button type="button" class="filter-btn active" onclick="filtrarEstoque('todos', event)">Todas as peças</button>
                 <button type="button" class="filter-btn" onclick="filtrarEstoque('Lingerie', event)">Lingerie</button>
@@ -2126,6 +2197,8 @@ html.dark-mode #estoque #listaProdutos .vitrine-sold-info{color:#d4adb5}
                 msgEl.style.color = disponivel ? 'var(--success-green)' : 'var(--danger-burgundy)';
                 msgEl.innerText = disponivel ? `✓ ${cor.nome || 'Cor selecionada'} disponível no tamanho ${tamanho}` : `⚠️ ${cor.nome || 'Esta cor'} não temos disponível no tamanho ${tamanho}.`;
             }
+            const labelAtual=document.getElementById('vitrine-cor-atual-'+prodId);
+            if(labelAtual)labelAtual.textContent=cor.nome||'Cor selecionada';
             const card = el && el.closest('.product-card');
             if (card) card.querySelectorAll('.color-circle-btn').forEach(b => b.classList.toggle('active', b === el));
         }
@@ -2145,10 +2218,46 @@ html.dark-mode #estoque #listaProdutos .vitrine-sold-info{color:#d4adb5}
             if (ativo) trocarFotoProdutoCor(prodId, ativo.dataset.corIndex, ativo, false);
         }
 
+
+        // Filtros administrativos visuais: não alteram produtos nem salvamento.
+        function finaNormalizarCorFiltro(nome){
+            return String(nome||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim()
+              .replace(/\b(branca|branco)\b/g,'branco').replace(/\b(preta|preto)\b/g,'preto')
+              .replace(/\b(vermelha|vermelho)\b/g,'vermelho').replace(/\b(rosa claro|rosinha)\b/g,'rosa claro');
+        }
+        function finaAtualizarSelectFiltro(id, opcoes, texto){
+            const el=document.getElementById(id); if(!el)return;
+            const atual=el.value;
+            const lista=[...new Set(opcoes.filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b),'pt-BR'));
+            const signature=JSON.stringify(lista);
+            if(el.dataset.optionsSignature===signature)return;
+            el.dataset.optionsSignature=signature;
+            el.replaceChildren(new Option(texto,''),...lista.map(x=>new Option(x,x)));
+            if(lista.includes(atual))el.value=atual;
+        }
+        function atualizarFiltrosDaVitrine(){
+            if(typeof produtos==='undefined'||!Array.isArray(produtos))return;
+            finaAtualizarSelectFiltro('vitrineFiltroTipo', produtos.map(p=>String(p.tipoPeca||'').trim()),'Todos os tipos');
+            const cores=[...new Map(produtos.flatMap(p=>(p.galeriaCores||[]).map(c=>[finaNormalizarCorFiltro(c.nome),String(c.nome||'').trim()])).filter(([c])=>!!c)).keys()];
+            finaAtualizarSelectFiltro('vitrineFiltroCor',cores,'Todas as cores');
+        }
+        function limparFiltrosVitrine(){
+            for(const id of ['vitrineFiltroTipo','vitrineFiltroTamanho','vitrineFiltroCor']){
+                const el=document.getElementById(id);if(el)el.value='';
+            }
+            const busca=document.getElementById('buscaEstoque');if(busca)busca.value='';
+            renderizarProdutos();
+        }
+
         function renderizarProdutos() {
             const container = document.getElementById('listaProdutos'); if(!container) return; container.innerHTML = '';
+            atualizarFiltrosDaVitrine();
+            
             let textoBusca = (document.getElementById('buscaEstoque').value || '').toLowerCase(); let filtrados = [...produtos]; const hojeTime = new Date().getTime();
             const isModoCliente = document.body.classList.contains('modo-cliente');
+            const tipoFiltro=(document.getElementById('vitrineFiltroTipo')?.value||'');
+            const tamanhoFiltro=(document.getElementById('vitrineFiltroTamanho')?.value||'');
+            const corFiltro=(document.getElementById('vitrineFiltroCor')?.value||'');
 
             filtrados.sort((a, b) => (a.nome || '').localeCompare(b.nome));
             filtrados = filtrados.filter(p => {
@@ -2162,6 +2271,13 @@ html.dark-mode #estoque #listaProdutos .vitrine-sold-info{color:#d4adb5}
                 if (filtroAtual === 'Sexshop' && p.categoria !== 'Sexshop') return false;
                 if (filtroAtual === 'Disponível' && totalDisp === 0) return false; 
                 if (filtroAtual === 'encalhado' && !isEncalhado) return false;
+                if(tipoFiltro && String(p.tipoPeca||'').trim()!==tipoFiltro) return false;
+                if(tamanhoFiltro){
+                    const t=tamanhoFiltro;
+                    const qtd=p.categoria==='Sexshop' ? (Number((p.grade||{})[t])||0) : (p.galeriaCores||[]).reduce((n,c)=>n+(c.esgotada?0:(Number((c.grade||{})[t])||0)),0);
+                    if(qtd<=0) return false;
+                }
+                if(corFiltro && !(p.galeriaCores||[]).some(c=>finaNormalizarCorFiltro(c.nome)===corFiltro)) return false;
                 
                 if(textoBusca) { 
                     let coresStr = p.galeriaCores ? p.galeriaCores.map(c=>c.nome).join(' ').toLowerCase() : '';
@@ -2209,7 +2325,7 @@ html.dark-mode #estoque #listaProdutos .vitrine-sold-info{color:#d4adb5}
                     });
                 }
 
-                let menuCoresContainer = botoesCoresHtml ? `<div class="color-picker-container"><span class="color-picker-label">Trocar cor</span>${botoesCoresHtml}</div>` : '';
+                let menuCoresContainer = botoesCoresHtml ? `<div class="color-picker-container"><span class="color-picker-label">Cor: <strong id="vitrine-cor-atual-${p.id}">${(p.galeriaCores[0]?.nome||'Escolha')}</strong></span>${botoesCoresHtml}</div>` : '';
                 let seletorTamanhoCliente = (isModoCliente && p.categoria !== 'Sexshop') ? `<div class="cliente-tamanho-wrap"><label for="tam_cliente_${p.id}">Escolha seu tamanho</label><select class="cliente-tamanho-select" id="tam_cliente_${p.id}" onchange="atualizarTamanhoCliente(${p.id}, this.value)"><option value="PP">PP</option><option value="P">P</option><option value="M">M</option><option value="G">G</option><option value="GG">GG</option><option value="XG">XG</option><option value="Outro">Outro / Único</option></select></div>` : '';
 
                 if (isModoCliente) {

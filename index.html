@@ -1243,7 +1243,7 @@
 
         function getDocIdFistore() { let email = window.userEmailAtual || (auth.currentUser ? auth.currentUser.email : localStorage.getItem('fina_email')); if(email) { if(email.toLowerCase() === 'a@gmail.com') return 'loja_principal'; return "loja_" + email.toLowerCase().replace(/[@.]/g, "_"); } return "loja_principal"; }
 
-        async function salvarNoFirestore() { 
+        async function salvarNoFirestore(repassarErro=false) { 
             const docId = getDocIdFistore(); 
             let btnSalvar = document.getElementById('btnSalvarProduto');
             let textoBtnOriginal = btnSalvar ? btnSalvar.innerText : 'Salvar';
@@ -1293,13 +1293,21 @@
                     produtos: produtosParaSalvar, vendas: vendasParaSalvar, gastos: gastos, retiradas: retiradas, notas: notas 
                 });
 
-                if(localStorage.getItem('fina_catalogo_auto') !== 'nao') { try { await finaPublicarCatalogo(true); } catch(ex) { console.warn('Catálogo público não atualizado:',ex); } }
-
-                if(btnSalvar) { btnSalvar.innerText = "✨ Salvo!"; setTimeout(() => { btnSalvar.innerText = textoBtnOriginal; btnSalvar.disabled = false; }, 1500); }
+                if (localStorage.getItem('fina_catalogo_auto') !== 'nao') {
+                    // O catálogo roda depois, sem atrasar nem desfazer o salvamento privado.
+                    finaPublicarCatalogo(true).catch(ex => {
+                        console.warn('Catálogo público não atualizado:', ex);
+                        finaStatusCatalogo('Produto salvo, mas o catálogo não sincronizou: '+ex.message);
+                    });
+                }
+                if(btnSalvar) { btnSalvar.innerText = "✓ Salvo no servidor"; btnSalvar.disabled = false; }
+                return true;
             } catch (e) {
                 console.error("Erro ao salvar:", e);
                 alert("Erro ao salvar: " + e.message);
                 if(btnSalvar) { btnSalvar.innerText = textoBtnOriginal; btnSalvar.disabled = false; }
+                if (repassarErro) throw e;
+                return false;
             }
         }
 
@@ -1314,7 +1322,12 @@
                     novosProdutos.forEach(np => {
                         let antigo = produtos.find(p => p.id === np.id);
                         if (antigo && antigo.foto) np.foto = antigo.foto;
-                        if (antigo && antigo.galeriaCores) np.galeriaCores = antigo.galeriaCores;
+                        if (antigo && antigo.galeriaCores && np.galeriaCores) {
+                            np.galeriaCores.forEach((cor, idx) => {
+                                const local = antigo.galeriaCores[idx];
+                                if (local && local.foto && !cor.foto) cor.foto = local.foto;
+                            });
+                        }
                         if (!np.categoria) np.categoria = 'Lingerie';
                         if (!np.galeriaCores) np.galeriaCores = [];
                     });
@@ -1632,7 +1645,13 @@
             descontoEl.innerText = `R$ ${valorDesconto.toFixed(2)} (${percentualDesconto}%)`; totalEl.innerText = `R$ ${totalFinal.toFixed(2)}`;
         }
 
-        function adicionarProduto() {
+        async function adicionarProduto() {
+            const botaoSalvar = document.getElementById('btnSalvarProduto');
+            if (botaoSalvar && botaoSalvar.disabled) return;
+            const idEmEdicao = produtoEmEdicaoId;
+            const produtoAnterior = idEmEdicao != null ? produtos.find(p => p.id === idEmEdicao) : null;
+            const copiaAnterior = produtoAnterior ? structuredClone(produtoAnterior) : null;
+            const idsAntes = new Set(produtos.map(p=>p.id));
             const cat = document.getElementById('pCategoria').value || 'Lingerie';
             const tipoPeca = document.getElementById('pTipoPeca').value;
             const ref = document.getElementById('pRef').value.trim() || 'SEM-REF', marca = document.getElementById('pMarca').value.trim() || 'Diversos', nome = document.getElementById('pNome').value.trim();
@@ -1655,11 +1674,11 @@
                 const prod = produtos.find(item => item.id === produtoEmEdicaoId);
                 if (prod) { 
                     prod.categoria = cat; prod.tipoPeca = tipoPeca; prod.ref = ref; prod.marca = marca; prod.nome = nome; prod.preco = preco; prod.custo = custo; 
-                    if (fotoBackup) { prod.foto = fotoBackup; prod.fotoModificada = true; }
+                    if (fotoBackup && fotoBackup !== prod.foto) { prod.foto = fotoBackup; prod.fotoModificada = true; }
                     prod.grade = {PP:pp,P:p,M:m,G:g,GG:gg,XG:xg,Outro:outro}; 
                     prod.galeriaCores = galeriaSalvar;
                 }
-                produtoEmEdicaoId = null; document.getElementById('tituloSecaoProduto').innerText = "Adicionar Nova Peça"; document.getElementById('btnSalvarProduto').innerText = "➕ Adicionar à Vitrine"; document.getElementById('btnCancelarEdicaoProduto').style.display = 'none';
+                // Mantém a edição ativa até o servidor confirmar a gravação.
             } else {
                 produtos.push({ 
                     id: Date.now(), categoria: cat, tipoPeca, ref, marca, nome, preco, custo, 
@@ -1669,7 +1688,32 @@
                     gradeVendida: {PP:0,P:0,M:0,G:0,GG:0,XG:0,Outro:0}, dataCadastro: hojeStr 
                 }); 
             }
-            salvarNoFirestore(); limparFormularioProduto(); renderizarTudo();
+            renderizarTudo();
+            try {
+                const confirmado = await salvarNoFirestore(true);
+                if (!confirmado) throw new Error('Servidor não confirmou a gravação');
+                limparFormularioProduto();
+                document.getElementById('btnSalvarProduto').innerText = '➕ Adicionar à Vitrine';
+                document.getElementById('tituloSecaoProduto').innerText = 'Adicionar Nova Peça';
+                document.getElementById('btnCancelarEdicaoProduto').style.display = 'none';
+                produtoEmEdicaoId = null;
+                renderizarTudo();
+            } catch (err) {
+                // Não abandona a edição nem apaga os campos quando a gravação falha.
+                if (idEmEdicao != null && copiaAnterior) {
+                    const index = produtos.findIndex(p=>p.id===idEmEdicao);
+                    if (index !== -1) produtos[index]=copiaAnterior;
+                } else {
+                    produtos=produtos.filter(p=>idsAntes.has(p.id));
+                }
+                produtoEmEdicaoId=idEmEdicao;
+                if (idEmEdicao != null) {
+                    document.getElementById('tituloSecaoProduto').innerText='Editando: '+(copiaAnterior?.nome||nome);
+                    document.getElementById('btnSalvarProduto').innerText='💾 Salvar Alterações';
+                    document.getElementById('btnCancelarEdicaoProduto').style.display='block';
+                }
+                renderizarTudo();
+            }
         }
 
         function limparFormularioProduto() { 

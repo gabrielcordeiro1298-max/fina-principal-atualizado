@@ -1420,8 +1420,25 @@
             atualizarTotaisGrade();
         }
 
+        const finaCoresEquivalentes={
+            'branca':'Branco','branco':'Branco','off white':'Branco','off-white':'Branco',
+            'preta':'Preto','preto':'Preto','vermelha':'Vermelho','vermelho':'Vermelho',
+            'amarela':'Amarelo','amarelo':'Amarelo', 'roxa':'Roxo','roxo':'Roxo',
+            'dourada':'Dourado','dourado':'Dourado', 'prateada':'Prata','prateado':'Prata',
+            'pink':'Rosa','bordô':'Vinho','bordo':'Vinho'
+        };
+        function finaCorCanonica(texto){
+            const cor=String(texto||'').trim();
+            const key=cor.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+            return finaCoresEquivalentes[key]||cor;
+        }
         function atualizarNomeCorForm(index, valor) {
             if(listaCoresForm[index]) listaCoresForm[index].nome = valor;
+        }
+        function confirmarCorForm(index, input){
+            const valor=finaCorCanonica(input.value);
+            input.value=valor;
+            atualizarNomeCorForm(index,valor);
         }
 
         function atualizarEsgotadaCorForm(index, checked) {
@@ -1491,7 +1508,7 @@
                     <div class="cor-item-row">
                         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;width:100%;">
                             ${item.miniatura ? `<img src="${item.miniatura}" alt="Prévia da cor" style="width:54px;height:64px;object-fit:contain;background:#fff;border:1px solid var(--border-luxury);border-radius:8px;">` : ''}
-                            <div style="flex:1;min-width:150px;"><label style="font-size:.72rem;display:block;margin-bottom:4px;">1. Nome da cor</label><input type="text" value="${item.nome || ''}" placeholder="Ex.: Preto, Nude, Vermelho" oninput="atualizarNomeCorForm(${index}, this.value)"></div>
+                            <div style="flex:1;min-width:150px;"><label style="font-size:.72rem;display:block;margin-bottom:4px;">1. Cor da peça</label><input type="text" list="finaCoresComuns" autocomplete="off" value="${item.nome || ''}" placeholder="Escolha ou digite a cor" oninput="atualizarNomeCorForm(${index}, this.value)" onchange="confirmarCorForm(${index}, this)"><small style="font-size:.68rem;color:var(--text-muted)">Escolha uma sugestão ou digite outra cor.</small></div>
                             <div class="acoes-foto-cor">
                                 <label class="btn-upload-mini btn-foto-camera" title="Abrir a câmera para tirar uma foto">📷 Tirar foto<input type="file" accept="image/*" capture="environment" aria-label="Tirar foto da cor ${item.nome || index+1}" onchange="processarFotoCorForm(event, ${index})"></label>
                                 <label class="btn-upload-mini btn-foto-galeria" title="Escolher uma foto já salva no celular">🖼️ Galeria<input type="file" accept="image/*" aria-label="Escolher foto da galeria para ${item.nome || index+1}" onchange="processarFotoCorForm(event, ${index})"></label>
@@ -1662,6 +1679,7 @@
             if(!nome || isNaN(preco)) return alert("Preencha o nome e o preço.");
 
             let galeriaSalvar = (cat === 'Sexshop') ? [] : JSON.parse(JSON.stringify(listaCoresForm.filter(c => (c.foto && c.foto.length > 50) || c.temFotoExterna || c.manterFotoExterna)));
+            galeriaSalvar.forEach(c=>{c.nome=finaCorCanonica(c.nome)});
             if (cat !== 'Sexshop' && galeriaSalvar.length === 0) return alert("Adicione pelo menos uma cor e uma foto para a lingerie.");
             galeriaSalvar.forEach(c => { if (!c.grade) c.grade = {PP:0,P:0,M:0,G:0,GG:0,XG:0,Outro:0}; c.gradePersonalizado = true; });
             if (cat !== 'Sexshop') {
@@ -2771,5 +2789,6 @@ async function finaPublicarCatalogo(silencioso=false) {
   }catch(e){finaStatusCatalogo('Falha ao publicar: '+e.message);if(!silencioso)alert('Falha ao publicar. Confira as regras do Firestore. '+e.message);throw e;}
 }
 </script>
+<datalist id="finaCoresComuns"><option value="Branco"></option><option value="Preto"></option><option value="Vermelho"></option><option value="Rosa"></option><option value="Rosa claro"></option><option value="Azul"></option><option value="Azul claro"></option><option value="Verde"></option><option value="Amarelo"></option><option value="Roxo"></option><option value="Lilás"></option><option value="Nude"></option><option value="Bege"></option><option value="Marrom"></option><option value="Cinza"></option><option value="Vinho"></option><option value="Laranja"></option><option value="Dourado"></option><option value="Prata"></option></datalist>
 </body>
 </html>

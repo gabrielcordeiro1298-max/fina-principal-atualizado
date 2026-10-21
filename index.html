@@ -696,7 +696,19 @@
                 </div>
                 <div>
                     <label for="pTipoPeca">Tipo da peça (filtro do catálogo)</label>
-                    <select id="pTipoPeca" style="font-weight:700;border-color:var(--brand-accent)"></select>
+                    <select id="pTipoPeca" style="font-weight:700;border-color:var(--brand-accent)">
+                        <option value="" selected>Não classificado</option>
+                        <option value="Calcinha">Calcinha</option>
+                        <option value="Sutiã">Sutiã</option>
+                        <option value="Conjunto">Conjunto</option>
+                        <option value="Body">Body</option>
+                        <option value="Camisola">Camisola</option>
+                        <option value="Baby Doll">Baby Doll</option>
+                        <option value="Short e bermuda">Short e bermuda</option>
+                        <option value="Modelador">Modelador</option>
+                        <option value="Pijama">Pijama</option>
+                        <option value="Outros">Outros</option>
+                    </select>
                     <small class="field-help">Escolha o tipo que a cliente verá no catálogo. Isso não altera o estoque.</small>
                 </div>
                 <div><label>Referência</label><input type="text" id="pRef" placeholder="Ex: REF-402"></div>
@@ -1048,6 +1060,7 @@
         document.getElementById('rData').value = hojeStr;
 
         window.onload = function() {
+            preencherOpcoesTipoPeca(document.getElementById('pTipoPeca')?.value || '');
             atualizarFraseDiaria();
             document.getElementById('inputMetaMes').value = metaMensalVal;
             adicionarLinhaCorFormulario(); 

@@ -336,7 +336,12 @@
         .fina-alert-pill { font-size:.75rem; padding:4px 8px; border-radius:99px; background:var(--rose-champagne); color:var(--brand-main); font-weight:800; white-space:nowrap; }
         @media(max-width:600px) { .fina-tool-actions button { flex-basis:100%; } .fina-global-search { margin:12px 0 16px; } }
 
-    </style>
+    
+/* Grade ampliada sem alterar os tamanhos antigos */
+#formEdicaoProduto .grade-inputs {grid-template-columns:repeat(auto-fit,minmax(74px,1fr));}
+#listaLinhasCores .grade-inputs {grid-template-columns:repeat(auto-fit,minmax(72px,1fr));}
+@media(max-width:650px){#formEdicaoProduto{gap:12px}#formEdicaoProduto > div{min-width:0}}
+</style>
 </head>
 <body>
 
@@ -723,7 +728,9 @@
                     <label style="color: var(--brand-main); margin-bottom: 5px; font-weight: 800;">📦 Estoque do Sexshop por tamanho</label>
                     <div class="grade-inputs">
                         <div>
-                            <label>Tam P</label>
+                            <label>Tam PP</label>
+                            <input type="number" id="qtdPP" value="0" min="0" oninput="atualizarTotaisGrade()">
+                        </div><div><label>Tam P</label>
                             <input type="number" id="qtdP" value="0" min="0" oninput="atualizarTotaisGrade()">
                         </div>
                         <div>
@@ -739,7 +746,9 @@
                             <input type="number" id="qtdGG" value="0" min="0" oninput="atualizarTotaisGrade()">
                         </div>
                         <div>
-                            <label>Outro/Único</label>
+                            <label>Tam XG (extra grande)</label>
+                            <input type="number" id="qtdXG" value="0" min="0" oninput="atualizarTotaisGrade()">
+                        </div><div><label>Outro/Único</label>
                             <input type="number" id="qtdOutro" value="0" min="0" oninput="atualizarTotaisGrade()">
                         </div>
                     </div>
@@ -1264,7 +1273,7 @@
                                 promessasUploadFotos.push(uploadTaskCor);
                             }
                         });
-                        pCopy.galeriaCores = pCopy.galeriaCores.map(c => ({ nome: c.nome, miniatura: c.miniatura || '', temFotoExterna: !!(c.temFotoExterna || (c.foto && c.foto.length > 500)), esgotada: !!c.esgotada, grade: c.grade || {P:0,M:0,G:0,GG:0,Outro:0}, gradePersonalizado: true }));
+                        pCopy.galeriaCores = pCopy.galeriaCores.map(c => ({ nome: c.nome, miniatura: c.miniatura || '', temFotoExterna: !!(c.temFotoExterna || (c.foto && c.foto.length > 500)), esgotada: !!c.esgotada, grade: c.grade || {PP:0,P:0,M:0,G:0,GG:0,XG:0,Outro:0}, gradePersonalizado: true }));
                     }
 
                     delete pCopy.foto; delete pCopy.fotoModificada;
@@ -1312,11 +1321,11 @@
 
                     produtos = novosProdutos;
                     produtos.forEach(p => {
-                        if (!p.grade) p.grade = {P:0,M:0,G:0,GG:0,Outro:0};
-                        if (!p.gradeVendida) p.gradeVendida = {P:0,M:0,G:0,GG:0,Outro:0};
+                        if (!p.grade) p.grade = {PP:0,P:0,M:0,G:0,GG:0,XG:0,Outro:0};
+                        if (!p.gradeVendida) p.gradeVendida = {PP:0,P:0,M:0,G:0,GG:0,XG:0,Outro:0};
                         if (p.categoria !== 'Sexshop' && p.galeriaCores?.length) {
-                            const totalPorCor = p.galeriaCores.reduce((n,c)=>n+['P','M','G','GG','Outro'].reduce((a,t)=>a+(parseInt((c.grade||{})[t],10)||0),0),0);
-                            const totalAntigo = ['P','M','G','GG','Outro'].reduce((n,t)=>n+(parseInt((p.grade||{})[t],10)||0),0);
+                            const totalPorCor = p.galeriaCores.reduce((n,c)=>n+['PP','P','M','G','GG','XG','Outro'].reduce((a,t)=>a+(parseInt((c.grade||{})[t],10)||0),0),0);
+                            const totalAntigo = ['PP','P','M','G','GG','XG','Outro'].reduce((n,t)=>n+(parseInt((p.grade||{})[t],10)||0),0);
                             if (totalPorCor === 0 && totalAntigo > 0) p.galeriaCores[0].grade = {...p.grade};
                             sincronizarEstoqueAgregado(p);
                         }
@@ -1365,18 +1374,28 @@
 
         function calcularSugestaoPreco() { const c = parseFloat(document.getElementById('pCusto').value) || 0; const m = parseFloat(document.getElementById('pMargem').value) || 2; if(c > 0) document.getElementById('pPreco').value = (c * m).toFixed(2); atualizarTotaisGrade(); }
 
-        function atualizarTotaisGrade() { const p = parseInt(document.getElementById('qtdP').value)||0, m = parseInt(document.getElementById('qtdM').value)||0, g = parseInt(document.getElementById('qtdG').value)||0, gg = parseInt(document.getElementById('qtdGG').value)||0, o = parseInt(document.getElementById('qtdOutro').value)||0; const totalSexshop = p+m+g+gg+o; const totalCores = (listaCoresForm || []).reduce((s,c) => s + ['P','M','G','GG','Outro'].reduce((n,t) => n + (parseInt((c.grade||{})[t],10)||0),0),0); const total = document.getElementById('pCategoria').value === 'Sexshop' ? totalSexshop : totalCores; const preco = parseFloat(document.getElementById('pPreco').value)||0; const totalEl = document.getElementById('resTotalPecas'); const valorEl = document.getElementById('resValorTotal'); if(totalEl) totalEl.innerText = total; if(valorEl) valorEl.innerText = "R$ " + (total*preco).toFixed(2); const resumo = document.getElementById('resumoTotalCores'); if(resumo) resumo.innerText = document.getElementById('pCategoria').value === 'Sexshop' ? totalSexshop : totalCores; }
+        function atualizarTotaisGrade() {
+            const tamanhos=['PP','P','M','G','GG','XG','Outro'];
+            const sexshop=tamanhos.reduce((s,t)=>s+(parseInt(document.getElementById('qtd'+t)?.value,10)||0),0);
+            const cores=(listaCoresForm||[]).reduce((s,c)=>s+tamanhos.reduce((n,t)=>n+(parseInt((c.grade||{})[t],10)||0),0),0);
+            const total=document.getElementById('pCategoria').value==='Sexshop'?sexshop:cores;
+            const preco=parseFloat(document.getElementById('pPreco').value)||0;
+            const totalEl=document.getElementById('resTotalPecas'), valorEl=document.getElementById('resValorTotal'), resumo=document.getElementById('resumoTotalCores');
+            if(totalEl)totalEl.innerText=total;
+            if(valorEl)valorEl.innerText='R$ '+(total*preco).toFixed(2);
+            if(resumo)resumo.innerText=total;
+        }
 
         let listaCoresForm = [];
 
         function adicionarLinhaCorFormulario(nomeCor = '', fotoCor = '', esgotada = false, gradeCor = null, gradePersonalizado = false) {
-            listaCoresForm.push({ nome: nomeCor, foto: fotoCor, esgotada: esgotada, grade: gradeCor || {P:0,M:0,G:0,GG:0,Outro:0}, gradePersonalizado: !!gradePersonalizado });
+            listaCoresForm.push({ nome: nomeCor, foto: fotoCor, esgotada: esgotada, grade: gradeCor || {PP:0,P:0,M:0,G:0,GG:0,XG:0,Outro:0}, gradePersonalizado: !!gradePersonalizado });
             renderizarLinhasCoresForm();
             atualizarTotaisGrade();
         }
         function atualizarEstoqueCorForm(index, tamanho, valor) {
             const cor = listaCoresForm[index]; if (!cor) return;
-            if (!cor.grade) cor.grade = {P:0,M:0,G:0,GG:0,Outro:0};
+            if (!cor.grade) cor.grade = {PP:0,P:0,M:0,G:0,GG:0,XG:0,Outro:0};
             cor.grade[tamanho] = Math.max(0, parseInt(valor,10) || 0);
             cor.gradePersonalizado = true;
             atualizarTotaisGrade();
@@ -1450,10 +1469,10 @@
             }
 
             listaCoresForm.forEach((item, index) => {
-                if (!item.grade) item.grade = {P:0,M:0,G:0,GG:0,Outro:0};
+                if (!item.grade) item.grade = {PP:0,P:0,M:0,G:0,GG:0,XG:0,Outro:0};
                 let statusFoto = (item.foto || item.temFotoExterna || item.manterFotoExterna) ? `✅ Foto pronta` : `Foto ainda não adicionada`;
                 let checkedEsgotada = item.esgotada ? 'checked' : '';
-                const tamanhos = ['P','M','G','GG','Outro'];
+                const tamanhos = ['PP','P','M','G','GG','XG','Outro'];
                 const gradeHtml = tamanhos.map(t => `<div><label>${t}</label><input aria-label="Estoque ${t} da cor ${item.nome || index+1}" type="number" min="0" value="${item.grade[t] || 0}" oninput="atualizarEstoqueCorForm(${index}, '${t}', this.value)"></div>`).join('');
                 container.innerHTML += `
                     <div class="cor-item-row">
@@ -1510,7 +1529,7 @@
 
             filtrados.forEach(p => {
                 let stockParts = [];
-                ['P', 'M', 'G', 'GG', 'Outro'].forEach(t => {
+                ['PP', 'P', 'M', 'G', 'GG', 'XG', 'Outro'].forEach(t => {
                     let currentQtdInCart = carrinhoItens.filter(it => it.produtoId === p.id && it.tamanho === t).length;
                     let oldQtdInSale = (oldV && oldV.itens) ? oldV.itens.filter(it => it.produtoId === p.id && it.tamanho === t).length : 0;
                     let netNewInCart = currentQtdInCart - oldQtdInSale;
@@ -1545,7 +1564,7 @@
             const select = document.getElementById('seletorCorVenda');
             if (p.categoria !== 'Sexshop' && Array.isArray(p.galeriaCores) && p.galeriaCores.length) {
                 wrap.style.display = 'block';
-                select.innerHTML = p.galeriaCores.map((c,i) => `<option value="${i}">${c.nome || `Cor ${i+1}`} — ${['P','M','G','GG','Outro'].reduce((n,t)=>n+(parseInt((c.grade||{})[t],10)||0),0)} peça(s)</option>`).join('');
+                select.innerHTML = p.galeriaCores.map((c,i) => `<option value="${i}">${c.nome || `Cor ${i+1}`} — ${['PP','P','M','G','GG','XG','Outro'].reduce((n,t)=>n+(parseInt((c.grade||{})[t],10)||0),0)} peça(s)</option>`).join('');
                 select.value = '0';
             } else {
                 wrap.style.display = 'none'; select.innerHTML = '';
@@ -1562,7 +1581,7 @@
             const cor = produtoCorSelecionadaTempIndex >= 0 ? (p.galeriaCores || [])[produtoCorSelecionadaTempIndex] : null;
             const container = document.getElementById('botoesTamanhosDisponiveis'); container.innerHTML = '';
             const oldV = vendaEmEdicaoId ? vendas.find(v => v.id === vendaEmEdicaoId) : null;
-            ['P','M','G','GG','Outro'].forEach(t => {
+            ['PP','P','M','G','GG','XG','Outro'].forEach(t => {
                 const currentQtdInCart = carrinhoItens.filter(it => it.produtoId === p.id && it.tamanho === t && (p.categoria === 'Sexshop' || Number(it.corIndex ?? -1) === produtoCorSelecionadaTempIndex)).length;
                 const oldQtdInSale = (oldV && oldV.itens) ? oldV.itens.filter(it => it.produtoId === p.id && it.tamanho === t && (p.categoria === 'Sexshop' || Number(it.corIndex ?? -1) === produtoCorSelecionadaTempIndex)).length : 0;
                 const netNewInCart = currentQtdInCart - oldQtdInSale;
@@ -1618,16 +1637,16 @@
             const tipoPeca = document.getElementById('pTipoPeca').value;
             const ref = document.getElementById('pRef').value.trim() || 'SEM-REF', marca = document.getElementById('pMarca').value.trim() || 'Diversos', nome = document.getElementById('pNome').value.trim();
             const preco = parseFloat(document.getElementById('pPreco').value), custo = parseFloat(document.getElementById('pCusto').value) || 0;
-            let p = 0, m = 0, g = 0, gg = 0, outro = 0;
-            if (cat === 'Sexshop') { p = parseInt(document.getElementById('qtdP').value)||0; m = parseInt(document.getElementById('qtdM').value)||0; g = parseInt(document.getElementById('qtdG').value)||0; gg = parseInt(document.getElementById('qtdGG').value)||0; outro = parseInt(document.getElementById('qtdOutro').value)||0; }
+            let pp = 0, p = 0, m = 0, g = 0, gg = 0, xg = 0, outro = 0;
+            if (cat === 'Sexshop') { pp = parseInt(document.getElementById('qtdPP').value)||0; xg = parseInt(document.getElementById('qtdXG').value)||0; p = parseInt(document.getElementById('qtdP').value)||0; m = parseInt(document.getElementById('qtdM').value)||0; g = parseInt(document.getElementById('qtdG').value)||0; gg = parseInt(document.getElementById('qtdGG').value)||0; outro = parseInt(document.getElementById('qtdOutro').value)||0; }
 
             if(!nome || isNaN(preco)) return alert("Preencha o nome e o preço.");
 
             let galeriaSalvar = (cat === 'Sexshop') ? [] : JSON.parse(JSON.stringify(listaCoresForm.filter(c => (c.foto && c.foto.length > 50) || c.temFotoExterna || c.manterFotoExterna)));
             if (cat !== 'Sexshop' && galeriaSalvar.length === 0) return alert("Adicione pelo menos uma cor e uma foto para a lingerie.");
-            galeriaSalvar.forEach(c => { if (!c.grade) c.grade = {P:0,M:0,G:0,GG:0,Outro:0}; c.gradePersonalizado = true; });
+            galeriaSalvar.forEach(c => { if (!c.grade) c.grade = {PP:0,P:0,M:0,G:0,GG:0,XG:0,Outro:0}; c.gradePersonalizado = true; });
             if (cat !== 'Sexshop') {
-                ['P','M','G','GG','Outro'].forEach(t => { const total = galeriaSalvar.reduce((s,c) => s + (parseInt((c.grade||{})[t],10)||0), 0); if(t==='P')p=total; else if(t==='M')m=total; else if(t==='G')g=total; else if(t==='GG')gg=total; else outro=total; });
+                ['PP','P','M','G','GG','XG','Outro'].forEach(t => { const total = galeriaSalvar.reduce((s,c) => s + (parseInt((c.grade||{})[t],10)||0), 0); if(t==='PP')pp=total; else if(t==='XG')xg=total; else if(t==='P')p=total; else if(t==='M')m=total; else if(t==='G')g=total; else if(t==='GG')gg=total; else outro=total; });
             }
 
             let fotoBackup = (galeriaSalvar.length > 0 && galeriaSalvar[0].foto) ? galeriaSalvar[0].foto : "";
@@ -1637,7 +1656,7 @@
                 if (prod) { 
                     prod.categoria = cat; prod.tipoPeca = tipoPeca; prod.ref = ref; prod.marca = marca; prod.nome = nome; prod.preco = preco; prod.custo = custo; 
                     if (fotoBackup) { prod.foto = fotoBackup; prod.fotoModificada = true; }
-                    prod.grade = {P:p, M:m, G:g, GG:gg, Outro:outro}; 
+                    prod.grade = {PP:pp,P:p,M:m,G:g,GG:gg,XG:xg,Outro:outro}; 
                     prod.galeriaCores = galeriaSalvar;
                 }
                 produtoEmEdicaoId = null; document.getElementById('tituloSecaoProduto').innerText = "Adicionar Nova Peça"; document.getElementById('btnSalvarProduto').innerText = "➕ Adicionar à Vitrine"; document.getElementById('btnCancelarEdicaoProduto').style.display = 'none';
@@ -1645,9 +1664,9 @@
                 produtos.push({ 
                     id: Date.now(), categoria: cat, tipoPeca, ref, marca, nome, preco, custo, 
                     foto: fotoBackup, fotoModificada: true,
-                    grade: {P:p,M:m,G:g,GG:gg,Outro:outro}, 
+                    grade: {PP:pp,P:p,M:m,G:g,GG:gg,XG:xg,Outro:outro}, 
                     galeriaCores: galeriaSalvar,
-                    gradeVendida: {P:0,M:0,G:0,GG:0,Outro:0}, dataCadastro: hojeStr 
+                    gradeVendida: {PP:0,P:0,M:0,G:0,GG:0,XG:0,Outro:0}, dataCadastro: hojeStr 
                 }); 
             }
             salvarNoFirestore(); limparFormularioProduto(); renderizarTudo();
@@ -1657,7 +1676,7 @@
             document.getElementById('pCategoria').value = 'Lingerie'; document.getElementById('pTipoPeca').value = ''; document.getElementById('pRef').value = ''; document.getElementById('pMarca').value = ''; document.getElementById('pNome').value = ''; document.getElementById('pPreco').value = ''; document.getElementById('pCusto').value = ''; document.querySelectorAll('input[type="file"]').forEach(i => i.value = '');
             listaCoresForm = [];
             adicionarLinhaCorFormulario();
-            ['P','M','G','GG','Outro'].forEach(t => {
+            ['PP','P','M','G','GG','XG','Outro'].forEach(t => {
                 document.getElementById('qtd'+t).value = '0';
             }); 
             preencherOpcoesTipoPeca(document.getElementById('pTipoPeca') ? document.getElementById('pTipoPeca').value : '');
@@ -1668,14 +1687,14 @@
         function editarProduto(id) {
             const p = produtos.find(item => item.id === id); if(!p) return; produtoEmEdicaoId = id;
             document.getElementById('pCategoria').value = p.categoria || 'Lingerie'; preencherOpcoesTipoPeca(p.tipoPeca || ''); document.getElementById('pRef').value = p.ref || ''; document.getElementById('pMarca').value = p.marca || ''; document.getElementById('pNome').value = p.nome || ''; document.getElementById('pCusto').value = p.custo || 0; document.getElementById('pPreco').value = p.preco || 0;
-            document.getElementById('qtdP').value = p.grade.P || 0; document.getElementById('qtdM').value = p.grade.M || 0; document.getElementById('qtdG').value = p.grade.G || 0; document.getElementById('qtdGG').value = p.grade.GG || 0; document.getElementById('qtdOutro').value = p.grade.Outro || 0;
+            document.getElementById('qtdPP').value = p.grade.PP || 0; document.getElementById('qtdXG').value = p.grade.XG || 0; document.getElementById('qtdP').value = p.grade.P || 0; document.getElementById('qtdM').value = p.grade.M || 0; document.getElementById('qtdG').value = p.grade.G || 0; document.getElementById('qtdGG').value = p.grade.GG || 0; document.getElementById('qtdOutro').value = p.grade.Outro || 0;
             
             listaCoresForm = (p.galeriaCores && Array.isArray(p.galeriaCores)) ? JSON.parse(JSON.stringify(p.galeriaCores)) : [];
             listaCoresForm.forEach(c => { if (!c.foto && (c.temFotoExterna || p.temFotosGaleriaExternas)) { c.temFotoExterna = true; c.manterFotoExterna = true; } });
             if (listaCoresForm.length === 0 && p.foto && p.categoria !== 'Sexshop') {
-                listaCoresForm.push({ nome: 'Cor a identificar', foto: p.foto, miniatura: p.foto, esgotada: false, grade: {...(p.grade || {P:0,M:0,G:0,GG:0,Outro:0})}, gradePersonalizado: true });
-            } else if (listaCoresForm.length && !listaCoresForm.some(c => ['P','M','G','GG','Outro'].some(t => (parseInt((c.grade||{})[t],10)||0) > 0))) {
-                listaCoresForm[0].grade = {...(p.grade || {P:0,M:0,G:0,GG:0,Outro:0})};
+                listaCoresForm.push({ nome: 'Cor a identificar', foto: p.foto, miniatura: p.foto, esgotada: false, grade: {...(p.grade || {PP:0,P:0,M:0,G:0,GG:0,XG:0,Outro:0})}, gradePersonalizado: true });
+            } else if (listaCoresForm.length && !listaCoresForm.some(c => ['PP','P','M','G','GG','XG','Outro'].some(t => (parseInt((c.grade||{})[t],10)||0) > 0))) {
+                listaCoresForm[0].grade = {...(p.grade || {PP:0,P:0,M:0,G:0,GG:0,XG:0,Outro:0})};
                 listaCoresForm[0].gradePersonalizado = true;
             }
 
@@ -1695,9 +1714,9 @@
         
         function sincronizarEstoqueAgregado(produto) {
             if (!produto) return;
-            if (!produto.grade) produto.grade = {P:0,M:0,G:0,GG:0,Outro:0};
+            if (!produto.grade) produto.grade = {PP:0,P:0,M:0,G:0,GG:0,XG:0,Outro:0};
             if (produto.categoria === 'Sexshop') return;
-            ['P','M','G','GG','Outro'].forEach(t => { produto.grade[t] = (produto.galeriaCores || []).reduce((n,c)=>n+(parseInt((c.grade||{})[t],10)||0),0); });
+            ['PP','P','M','G','GG','XG','Outro'].forEach(t => { produto.grade[t] = (produto.galeriaCores || []).reduce((n,c)=>n+(parseInt((c.grade||{})[t],10)||0),0); });
         }
 
         function estoqueCorPorTamanho(produto, cor, tamanho) {
@@ -1913,7 +1932,7 @@
 
             filtrados.sort((a, b) => (a.nome || '').localeCompare(b.nome));
             filtrados = filtrados.filter(p => {
-                let totalDisp = (p.grade.P||0) + (p.grade.M||0) + (p.grade.G||0) + (p.grade.GG||0) + (p.grade.Outro||0); 
+                let totalDisp = (p.grade.PP||0) + (p.grade.P||0) + (p.grade.M||0) + (p.grade.G||0) + (p.grade.GG||0) + (p.grade.XG||0) + (p.grade.Outro||0); 
                 let dataCad = new Date(p.dataCadastro || hojeStr).getTime(); 
                 let isEncalhado = totalDisp > 0 && ((hojeTime - dataCad) / (1000 * 3600 * 24)) > 30;
 
@@ -1934,7 +1953,7 @@
             if(filtrados.length === 0) return container.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 30px;">Nenhuma peça encontrada.</p>`;
             
             filtrados.forEach(p => {
-                let totalDisp = p.categoria === 'Sexshop' ? ['P','M','G','GG','Outro'].reduce((n,t)=>n+(parseInt((p.grade||{})[t],10)||0),0) : (p.galeriaCores||[]).reduce((n,c)=>n+['P','M','G','GG','Outro'].reduce((a,t)=>a+(parseInt((c.grade||{})[t],10)||0),0),0);
+                let totalDisp = p.categoria === 'Sexshop' ? ['PP','P','M','G','GG','XG','Outro'].reduce((n,t)=>n+(parseInt((p.grade||{})[t],10)||0),0) : (p.galeriaCores||[]).reduce((n,c)=>n+['PP','P','M','G','GG','XG','Outro'].reduce((a,t)=>a+(parseInt((c.grade||{})[t],10)||0),0),0);
                 let badgeStatus = totalDisp > 0 ? `<span class="badge disp">Disponível</span>` : `<span class="badge vend">Esgotado</span>`;
                 let catBadge = p.categoria === 'Sexshop' ? `<span class="badge cat-sexshop">🔥 Sexshop & Sensual</span>` : `<span class="badge cat-lingerie">👙 Lingerie</span>`;
 
@@ -1947,7 +1966,7 @@
 
                 let imgP = (p.galeriaCores && p.galeriaCores[0] && (p.galeriaCores[0].miniatura || p.galeriaCores[0].foto)) ? (p.galeriaCores[0].miniatura || p.galeriaCores[0].foto) : (p.foto || DEFAULT_IMG);
 
-                ['P','M','G','GG','Outro'].forEach(t => {
+                ['PP','P','M','G','GG','XG','Outro'].forEach(t => {
                     const qtd = p.categoria === 'Sexshop' ? (parseInt((p.grade||{})[t],10)||0) : (p.galeriaCores||[]).reduce((n,c)=>n+(parseInt((c.grade||{})[t],10)||0),0);
                     if(qtd > 0) { htmlSobra.push(`${qtd}x ${t}`); tamDisponiveisCliente.push(t); }
                     if(p.gradeVendida && p.gradeVendida[t] > 0) htmlVendido.push(`${p.gradeVendida[t]}x ${t}`);
@@ -1960,7 +1979,7 @@
                         const esgotada = !!cItem.esgotada;
                         const classeEsgotada = esgotada ? 'esgotada' : '';
                         const gradeCor = cItem.grade || {};
-                        const disponivel = ['P','M','G','GG','Outro'].some(t => (parseInt(gradeCor[t],10)||0)>0);
+                        const disponivel = ['PP','P','M','G','GG','XG','Outro'].some(t => (parseInt(gradeCor[t],10)||0)>0);
                         const conteudoMiniatura = fotoCor
                             ? `<img src="${fotoCor}" alt="Foto da cor ${cItem.nome || ''}" loading="lazy" draggable="false">`
                             : `<span class="miniatura-placeholder" aria-hidden="true">Carregando</span>`;
@@ -1969,7 +1988,7 @@
                 }
 
                 let menuCoresContainer = botoesCoresHtml ? `<div class="color-picker-container"><span class="color-picker-label">Trocar cor</span>${botoesCoresHtml}</div>` : '';
-                let seletorTamanhoCliente = (isModoCliente && p.categoria !== 'Sexshop') ? `<div class="cliente-tamanho-wrap"><label for="tam_cliente_${p.id}">Escolha seu tamanho</label><select class="cliente-tamanho-select" id="tam_cliente_${p.id}" onchange="atualizarTamanhoCliente(${p.id}, this.value)"><option value="P">P</option><option value="M">M</option><option value="G">G</option><option value="GG">GG</option><option value="Outro">Outro / Único</option></select></div>` : '';
+                let seletorTamanhoCliente = (isModoCliente && p.categoria !== 'Sexshop') ? `<div class="cliente-tamanho-wrap"><label for="tam_cliente_${p.id}">Escolha seu tamanho</label><select class="cliente-tamanho-select" id="tam_cliente_${p.id}" onchange="atualizarTamanhoCliente(${p.id}, this.value)"><option value="PP">PP</option><option value="P">P</option><option value="M">M</option><option value="G">G</option><option value="GG">GG</option><option value="XG">XG</option><option value="Outro">Outro / Único</option></select></div>` : '';
 
                 if (isModoCliente) {
                     container.innerHTML += `
@@ -2019,21 +2038,21 @@
         let produtoEmEdicaoModalId = null;
         function abrirModalEstoque(id) {
             const p = produtos.find(item => item.id === id); if(!p) return; produtoEmEdicaoModalId = id;
-            if(!p.gradeVendida) p.gradeVendida = {P:0, M:0, G:0, GG:0, Outro:0};
+            if(!p.gradeVendida) p.gradeVendida = {PP:0, P:0, M:0, G:0, GG:0, XG:0, Outro:0};
             document.getElementById('modalTitle').innerText = p.nome;
             document.getElementById('modalSub').innerText = `Ref: ${p.ref || '-'} | R$ ${(p.preco || 0).toFixed(2)}`;
             const container = document.getElementById('modalGradeList'); container.innerHTML = '';
             if (p.categoria !== 'Sexshop' && p.galeriaCores?.length) {
                 p.galeriaCores.forEach((cor, idx) => {
-                    if (!cor.grade) cor.grade = {P:0,M:0,G:0,GG:0,Outro:0};
-                    const tamanhos = ['P','M','G','GG','Outro'].map(t => {
+                    if (!cor.grade) cor.grade = {PP:0,P:0,M:0,G:0,GG:0,XG:0,Outro:0};
+                    const tamanhos = ['PP','P','M','G','GG','XG','Outro'].map(t => {
                         const qtd = parseInt(cor.grade[t],10)||0;
                         return `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 0;border-bottom:1px solid var(--border-luxury);"><span style="font-size:.82rem;font-weight:700;">${t}: <b style="color:var(--success-green);">${qtd}</b></span><div class="stock-adjust"><button onclick="ajustarEstoqueManual('${t}',1,${idx})">+</button><button onclick="ajustarEstoqueManual('${t}',-1,${idx})">−</button></div></div>`;
                     }).join('');
                     container.innerHTML += `<div style="padding:12px;margin-bottom:12px;border:1px solid var(--border-luxury);border-radius:12px;background:var(--card-pure);"><strong style="display:block;margin-bottom:8px;color:var(--brand-main);">🎨 ${cor.nome || `Cor ${idx+1}`}</strong>${tamanhos}</div>`;
                 });
             } else {
-                ['P','M','G','GG','Outro'].forEach(t => {
+                ['PP','P','M','G','GG','XG','Outro'].forEach(t => {
                     const qtdDisp = parseInt((p.grade||{})[t],10)||0;
                     const qtdVendida = parseInt((p.gradeVendida||{})[t],10)||0;
                     container.innerHTML += `<div class="grade-row"><div class="grade-info"><strong>Tamanho: ${t}</strong><span>Disp: <b style="color:var(--success-green);">${qtdDisp}</b> | Vendido: <b style="color:var(--danger-burgundy);">${qtdVendida}</b></span></div><div class="grade-actions"><div class="stock-adjust"><button onclick="ajustarEstoqueManual('${t}',1,-1)">+</button><button onclick="ajustarEstoqueManual('${t}',-1,-1)">−</button></div></div></div>`;
@@ -2045,7 +2064,7 @@
         function ajustarEstoqueManual(tamanho, valor, corIndex = -1) {
             const p = produtos.find(item => item.id === produtoEmEdicaoModalId); if(!p) return;
             if (p.categoria !== 'Sexshop' && corIndex >= 0 && p.galeriaCores?.[corIndex]) {
-                const cor = p.galeriaCores[corIndex]; if (!cor.grade) cor.grade = {P:0,M:0,G:0,GG:0,Outro:0};
+                const cor = p.galeriaCores[corIndex]; if (!cor.grade) cor.grade = {PP:0,P:0,M:0,G:0,GG:0,XG:0,Outro:0};
                 const novaQtd = (parseInt(cor.grade[tamanho],10)||0) + valor; if(novaQtd < 0) return;
                 cor.grade[tamanho] = novaQtd; sincronizarEstoqueAgregado(p);
             } else {
@@ -2059,7 +2078,7 @@
             let esgotados = [];
             produtos.forEach(p => {
                 let tamanhosEsgotados = [];
-                ['P', 'M', 'G', 'GG', 'Outro'].forEach(t => {
+                ['PP', 'P', 'M', 'G', 'GG', 'XG', 'Outro'].forEach(t => {
                     if ((p.grade[t] || 0) === 0 && p.gradeVendida && (p.gradeVendida[t] || 0) > 0) {
                         tamanhosEsgotados.push(t);
                     }
@@ -2094,7 +2113,7 @@
                         if (item.produtoId) {
                             let p = produtos.find(prod => prod.id === item.produtoId);
                             if (p) {
-                                if (p.categoria !== 'Sexshop' && p.galeriaCores?.length) { const ci = (item.corIndex != null && item.corIndex >= 0 && p.galeriaCores[item.corIndex]) ? item.corIndex : 0; if (!p.galeriaCores[ci].grade) p.galeriaCores[ci].grade = {P:0,M:0,G:0,GG:0,Outro:0}; p.galeriaCores[ci].grade[item.tamanho] = (parseInt(p.galeriaCores[ci].grade[item.tamanho],10)||0) + 1; } else p.grade[item.tamanho] = (p.grade[item.tamanho] || 0) + 1;
+                                if (p.categoria !== 'Sexshop' && p.galeriaCores?.length) { const ci = (item.corIndex != null && item.corIndex >= 0 && p.galeriaCores[item.corIndex]) ? item.corIndex : 0; if (!p.galeriaCores[ci].grade) p.galeriaCores[ci].grade = {PP:0,P:0,M:0,G:0,GG:0,XG:0,Outro:0}; p.galeriaCores[ci].grade[item.tamanho] = (parseInt(p.galeriaCores[ci].grade[item.tamanho],10)||0) + 1; } else p.grade[item.tamanho] = (p.grade[item.tamanho] || 0) + 1;
                                 if (p.gradeVendida && p.gradeVendida[item.tamanho] > 0) p.gradeVendida[item.tamanho]--;
                             }
                         }
@@ -2106,8 +2125,8 @@
                 if (item.produtoId) {
                     let p = produtos.find(prod => prod.id === item.produtoId);
                     if (p) {
-                        if (p.categoria !== 'Sexshop' && p.galeriaCores?.length) { const ci = (item.corIndex != null && item.corIndex >= 0 && p.galeriaCores[item.corIndex]) ? item.corIndex : 0; if (!p.galeriaCores[ci].grade) p.galeriaCores[ci].grade = {P:0,M:0,G:0,GG:0,Outro:0}; p.galeriaCores[ci].grade[item.tamanho] = Math.max(0, (parseInt(p.galeriaCores[ci].grade[item.tamanho],10)||0) - 1); } else p.grade[item.tamanho] = Math.max(0, (p.grade[item.tamanho] || 0) - 1);
-                        if (!p.gradeVendida) p.gradeVendida = {P:0, M:0, G:0, GG:0, Outro:0};
+                        if (p.categoria !== 'Sexshop' && p.galeriaCores?.length) { const ci = (item.corIndex != null && item.corIndex >= 0 && p.galeriaCores[item.corIndex]) ? item.corIndex : 0; if (!p.galeriaCores[ci].grade) p.galeriaCores[ci].grade = {PP:0,P:0,M:0,G:0,GG:0,XG:0,Outro:0}; p.galeriaCores[ci].grade[item.tamanho] = Math.max(0, (parseInt(p.galeriaCores[ci].grade[item.tamanho],10)||0) - 1); } else p.grade[item.tamanho] = Math.max(0, (p.grade[item.tamanho] || 0) - 1);
+                        if (!p.gradeVendida) p.gradeVendida = {PP:0, P:0, M:0, G:0, GG:0, XG:0, Outro:0};
                         p.gradeVendida[item.tamanho] = (p.gradeVendida[item.tamanho] || 0) + 1;
                     }
                 }
@@ -2232,7 +2251,7 @@
             });
         }
 
-        function estornarItemPorPainel(vendaId, itemIndex) { if(!confirm("Deseja devolver esta peça? Ela voltará automaticamente para o estoque da vitrine e o valor será estornado do caixa.")) return; const v = vendas.find(i => i.id === vendaId); if(!v) return; let item = v.itens[itemIndex]; let p = produtos.find(prod => prod.id === item.produtoId); if(p) { if (p.categoria !== 'Sexshop' && p.galeriaCores?.length) { const ci = (item.corIndex != null && item.corIndex >= 0 && p.galeriaCores[item.corIndex]) ? item.corIndex : 0; if (!p.galeriaCores[ci].grade) p.galeriaCores[ci].grade = {P:0,M:0,G:0,GG:0,Outro:0}; p.galeriaCores[ci].grade[item.tamanho] = (parseInt(p.galeriaCores[ci].grade[item.tamanho],10)||0)+1; } else p.grade[item.tamanho] = (p.grade[item.tamanho] || 0) + 1; sincronizarEstoqueAgregado(p); if(p.gradeVendida && p.gradeVendida[item.tamanho] > 0) p.gradeVendida[item.tamanho]--; } else if (item.ref) { let prodRef = produtos.find(prod => (prod.ref || '').toLowerCase() === (item.ref || '').toLowerCase()); if(prodRef) { if (prodRef.categoria !== 'Sexshop' && prodRef.galeriaCores?.length) { const ci = (item.corIndex != null && item.corIndex >= 0 && prodRef.galeriaCores[item.corIndex]) ? item.corIndex : 0; if (!prodRef.galeriaCores[ci].grade) prodRef.galeriaCores[ci].grade = {P:0,M:0,G:0,GG:0,Outro:0}; prodRef.galeriaCores[ci].grade[item.tamanho] = (parseInt(prodRef.galeriaCores[ci].grade[item.tamanho],10)||0)+1; } else prodRef.grade[item.tamanho] = (prodRef.grade[item.tamanho] || 0) + 1; sincronizarEstoqueAgregado(prodRef); if(prodRef.gradeVendida && prodRef.gradeVendida[item.tamanho] > 0) prodRef.gradeVendida[item.tamanho]--; } } v.valor -= item.valor; if(v.valor < 0) v.valor = 0; v.custo -= item.custo; if(v.custo < 0) v.custo = 0; v.itens.splice(itemIndex, 1); if(v.itens.length === 0) { vendas = vendas.filter(i => i.id !== v.id); } salvarNoFirestore(); renderizarTudo(); alert("✅ Peça devolvida para a vitrine e estoque atualizado com sucesso!"); }
+        function estornarItemPorPainel(vendaId, itemIndex) { if(!confirm("Deseja devolver esta peça? Ela voltará automaticamente para o estoque da vitrine e o valor será estornado do caixa.")) return; const v = vendas.find(i => i.id === vendaId); if(!v) return; let item = v.itens[itemIndex]; let p = produtos.find(prod => prod.id === item.produtoId); if(p) { if (p.categoria !== 'Sexshop' && p.galeriaCores?.length) { const ci = (item.corIndex != null && item.corIndex >= 0 && p.galeriaCores[item.corIndex]) ? item.corIndex : 0; if (!p.galeriaCores[ci].grade) p.galeriaCores[ci].grade = {PP:0,P:0,M:0,G:0,GG:0,XG:0,Outro:0}; p.galeriaCores[ci].grade[item.tamanho] = (parseInt(p.galeriaCores[ci].grade[item.tamanho],10)||0)+1; } else p.grade[item.tamanho] = (p.grade[item.tamanho] || 0) + 1; sincronizarEstoqueAgregado(p); if(p.gradeVendida && p.gradeVendida[item.tamanho] > 0) p.gradeVendida[item.tamanho]--; } else if (item.ref) { let prodRef = produtos.find(prod => (prod.ref || '').toLowerCase() === (item.ref || '').toLowerCase()); if(prodRef) { if (prodRef.categoria !== 'Sexshop' && prodRef.galeriaCores?.length) { const ci = (item.corIndex != null && item.corIndex >= 0 && prodRef.galeriaCores[item.corIndex]) ? item.corIndex : 0; if (!prodRef.galeriaCores[ci].grade) prodRef.galeriaCores[ci].grade = {PP:0,P:0,M:0,G:0,GG:0,XG:0,Outro:0}; prodRef.galeriaCores[ci].grade[item.tamanho] = (parseInt(prodRef.galeriaCores[ci].grade[item.tamanho],10)||0)+1; } else prodRef.grade[item.tamanho] = (prodRef.grade[item.tamanho] || 0) + 1; sincronizarEstoqueAgregado(prodRef); if(prodRef.gradeVendida && prodRef.gradeVendida[item.tamanho] > 0) prodRef.gradeVendida[item.tamanho]--; } } v.valor -= item.valor; if(v.valor < 0) v.valor = 0; v.custo -= item.custo; if(v.custo < 0) v.custo = 0; v.itens.splice(itemIndex, 1); if(v.itens.length === 0) { vendas = vendas.filter(i => i.id !== v.id); } salvarNoFirestore(); renderizarTudo(); alert("✅ Peça devolvida para a vitrine e estoque atualizado com sucesso!"); }
 
         let vendaNotinhaAtivaId = null;
         function abrirModalNotinha(id) { const v = vendas.find(i => i.id === id); if(!v) return; vendaNotinhaAtivaId = id; if(!v.pagamentos) v.pagamentos = []; document.getElementById('notinhaModalSub').innerText = `${v.cliente} | R$ ${v.valor.toFixed(2)}`; document.getElementById('notinhaTotalVal').innerText = `R$ ${v.valor.toFixed(2)}`; document.getElementById('dataPagamentoNotinha').value = hojeStr; atualizarModalNotinhaValores(); document.getElementById('modalNotinha').style.display = 'flex'; }
@@ -2274,7 +2293,7 @@
                         if (item.produtoId) {
                             let p = produtos.find(prod => prod.id === item.produtoId);
                             if (p) {
-                                if (p.categoria !== 'Sexshop' && p.galeriaCores?.length) { const ci = (item.corIndex != null && item.corIndex >= 0 && p.galeriaCores[item.corIndex]) ? item.corIndex : 0; if (!p.galeriaCores[ci].grade) p.galeriaCores[ci].grade = {P:0,M:0,G:0,GG:0,Outro:0}; p.galeriaCores[ci].grade[item.tamanho] = (parseInt(p.galeriaCores[ci].grade[item.tamanho],10)||0) + 1; } else p.grade[item.tamanho] = (p.grade[item.tamanho] || 0) + 1;
+                                if (p.categoria !== 'Sexshop' && p.galeriaCores?.length) { const ci = (item.corIndex != null && item.corIndex >= 0 && p.galeriaCores[item.corIndex]) ? item.corIndex : 0; if (!p.galeriaCores[ci].grade) p.galeriaCores[ci].grade = {PP:0,P:0,M:0,G:0,GG:0,XG:0,Outro:0}; p.galeriaCores[ci].grade[item.tamanho] = (parseInt(p.galeriaCores[ci].grade[item.tamanho],10)||0) + 1; } else p.grade[item.tamanho] = (p.grade[item.tamanho] || 0) + 1;
                                 if (p.gradeVendida && p.gradeVendida[item.tamanho] > 0) p.gradeVendida[item.tamanho]--;
                             }
                         }
@@ -2511,8 +2530,8 @@
         function finaExportarEstoqueCSV() {
             const linhas=[['Referência','Produto','Categoria','Cor','Tamanho','Quantidade','Custo','Preço']];
             produtos.forEach(p=>{
-                if(p.categoria==='Sexshop') ['P','M','G','GG','Outro'].forEach(t=>linhas.push([p.ref||p.sku||'',p.nome||'',p.categoria||'', '',t,Number((p.grade||{})[t])||0,Number(p.custo)||0,Number(p.preco)||0]));
-                else (p.galeriaCores||[]).forEach(c=>['P','M','G','GG','Outro'].forEach(t=>linhas.push([p.ref||p.sku||'',p.nome||'',p.categoria||'',c.nome||'',t,Number((c.grade||{})[t])||0,Number(p.custo)||0,Number(p.preco)||0])));
+                if(p.categoria==='Sexshop') ['PP','P','M','G','GG','XG','Outro'].forEach(t=>linhas.push([p.ref||p.sku||'',p.nome||'',p.categoria||'', '',t,Number((p.grade||{})[t])||0,Number(p.custo)||0,Number(p.preco)||0]));
+                else (p.galeriaCores||[]).forEach(c=>['PP','P','M','G','GG','XG','Outro'].forEach(t=>linhas.push([p.ref||p.sku||'',p.nome||'',p.categoria||'',c.nome||'',t,Number((c.grade||{})[t])||0,Number(p.custo)||0,Number(p.preco)||0])));
             });
             finaBaixarArquivo(`fina-lingerie-estoque-${new Date().toISOString().slice(0,10)}.csv`,'\ufeff'+linhas.map(l=>l.map(finaCSV).join(';')).join('\r\n'),'text/csv');
         }
@@ -2521,8 +2540,8 @@
             const rows=[];
             produtos.forEach(p=>{
                 let qtd=0;
-                if(p.categoria==='Sexshop') qtd=['P','M','G','GG','Outro'].reduce((s,t)=>s+(Number((p.grade||{})[t])||0),0);
-                else qtd=(p.galeriaCores||[]).reduce((s,c)=>s+['P','M','G','GG','Outro'].reduce((n,t)=>n+(Number((c.grade||{})[t])||0),0),0);
+                if(p.categoria==='Sexshop') qtd=['PP','P','M','G','GG','XG','Outro'].reduce((s,t)=>s+(Number((p.grade||{})[t])||0),0);
+                else qtd=(p.galeriaCores||[]).reduce((s,c)=>s+['PP','P','M','G','GG','XG','Outro'].reduce((n,t)=>n+(Number((c.grade||{})[t])||0),0),0);
                 if(qtd<=3) rows.push({nome:p.nome||'Produto sem nome',qtd,ref:p.ref||p.sku||''});
             });
             rows.sort((a,b)=>a.qtd-b.qtd);
@@ -2532,7 +2551,7 @@
 
         function atualizarDashboard() {
             let totalGastoPecas = 0; let pecasDisponiveis = 0; let pecasVendidas = 0;
-            produtos.forEach(p => { ['P', 'M', 'G', 'GG', 'Outro'].forEach(t => { let disp = p.grade[t] || 0; let vend = p.gradeVendida[t] || 0; pecasDisponiveis += disp; pecasVendidas += vend; totalGastoPecas += (disp + vend) * (p.custo || 0); }); });
+            produtos.forEach(p => { ['PP', 'P', 'M', 'G', 'GG', 'XG', 'Outro'].forEach(t => { let disp = p.grade[t] || 0; let vend = p.gradeVendida[t] || 0; pecasDisponiveis += disp; pecasVendidas += vend; totalGastoPecas += (disp + vend) * (p.custo || 0); }); });
             let faturamentoReal = 0; let notinhaTotal = 0; let custoPecasVendidas = 0;
             vendas.forEach(v => { let pagoNestaVenda = 0; if(v.pagamentos) v.pagamentos.forEach(pag => pagNestaVenda += pag.valor); if(v.pago || pagoNestaVenda >= v.valor) { faturamentoReal += v.valor; } else { faturamentoReal += pagoNestaVenda; notinhaTotal += (v.valor - pagoNestaVenda); } custoPecasVendidas += (v.custo || 0); });
             let outrosCustos = 0; gastos.forEach(g => { outrosCustos += g.valor; }); let retiradasTotal = 0; retiradas.forEach(r => retiradasTotal += r.valor);
@@ -2555,7 +2574,7 @@
 function finaSetAutoCatalogo(checked) { localStorage.setItem('fina_catalogo_auto',checked?'sim':'nao'); finaStatusCatalogo(checked?'Sincronização automática ativada para os próximos salvamentos.':'Sincronização automática desativada.'); }
 function finaStatusCatalogo(t) { let el=document.getElementById('finaCatalogoStatus'); if(el)el.textContent=t; }
 window.addEventListener('load',()=>{let e=document.getElementById('finaAutoPublicarCatalogo');if(e)e.checked=localStorage.getItem('fina_catalogo_auto')!=='nao';});
-const finaCatalogoTamanhos=['P','M','G','GG','Outro'];
+const finaCatalogoTamanhos=['PP','P','M','G','GG','XG','Outro'];
 function finaGradePublica(g) {let o={};finaCatalogoTamanhos.forEach(t=>o[t]=Math.max(0,Math.floor(Number((g||{})[t])||0)));return o;}
 // Mantém a qualidade que já existe no painel; não reconverte toda imagem.
 async function finaImagemPequena(src) {
